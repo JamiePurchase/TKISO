@@ -3,6 +3,7 @@ package game.war;
 import debug.Console;
 import java.util.ArrayList;
 import network.NetworkService;
+import time.Timestamp;
 
 public class WarGateway
 {
@@ -17,11 +18,23 @@ public class WarGateway
         }
         else
         {
-            int host = Integer.parseInt(response.get(0).split("\\|")[1]);
-            int guest = Integer.parseInt(response.get(0).split("\\|")[2]);
-            int turnActive = Integer.parseInt(response.get(0).split("\\|")[3]);
-            int turnCount = Integer.parseInt(response.get(0).split("\\|")[4]);
-            return new WarData(id, host, guest, turnActive, turnCount);
+            // War Details
+            String[] details = response.get(0).split("\\|");
+            int host = Integer.parseInt(details[1]);
+            int guest = Integer.parseInt(details[2]);
+            int turnActive = Integer.parseInt(details[3]);
+            int turnCount = Integer.parseInt(details[4]);
+            //Timestamp turnBegin = new Timestamp(Integer.parseInt(details[5]));
+            //int world = Integer.parseInt(response.get(0).split("\\|")[6]);
+            
+            // NOTE: include new lines of data for entities, constructs, extras and config
+            
+            // TEMP
+            Timestamp turnBegin = new Timestamp();
+            int world = 1;
+            
+            // Create the WarData object
+            return new WarData(id, host, guest, world, turnActive, turnCount, turnBegin);
         }
         return null;
     }

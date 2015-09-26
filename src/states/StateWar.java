@@ -18,6 +18,11 @@ public class StateWar extends State
     
     // War
     private WarData warData;
+    private Rectangle warArea;
+    
+    // Info
+    private Rectangle infoArea;
+    private String infoText;
     
     // TEMP
     private final Rectangle tempButton1 = new Rectangle(350, 50, 200, 75);
@@ -30,6 +35,11 @@ public class StateWar extends State
         
         // War
         this.warData = war;
+        this.warArea = new Rectangle(0, 0, Engine.extendWindow.getRenderFill().width, Engine.extendWindow.getRenderFill().height - 30);
+        
+        // Info Bar
+        this.infoArea = new Rectangle(0, Engine.extendWindow.getRenderFill().height - 30, Engine.extendWindow.getRenderFill().width, 30);
+        this.infoText = "This is the info bar";
         
         // Refresh (move this into the war tick method later)
         this.refreshTick = 0;
@@ -53,13 +63,15 @@ public class StateWar extends State
 
     public void inputMouseClickL(MouseEvent e)
     {
+        //if(this.warArea.contains(e.getPoint())) {this.warArea.inputClickL(e);}
+        
         // TEMP
         if(this.tempButton1.contains(e.getPoint()) && this.isPlayerActive()) {this.warData.setTurnNext();}
     }
 
     public void inputMouseClickR(MouseEvent e)
     {
-        //
+        //if(this.warArea.contains(e.getPoint())) {this.warArea.inputClickR(e);}
     }
 
     public void inputMouseMove(MouseEvent e)
@@ -74,6 +86,24 @@ public class StateWar extends State
     }
     
     public void render(Graphics g)
+    {
+        // TEMP
+        //this.renderTemp(g);
+        
+        this.warData.render(g);
+        this.renderInfo(g);
+    }
+    
+    private void renderInfo(Graphics g)
+    {
+        // Background
+        Drawing.fillRect(g, this.infoArea, Color.WHITE);
+        
+        // Text
+        Text.write(g, this.infoText, this.infoArea.x + 15, this.infoArea.y + 15, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+    }
+    
+    private void renderTemp(Graphics g)
     {
         // Background
         Drawing.fillRect(g, Engine.extendWindow.getRenderFill(), Color.BLACK);
@@ -101,60 +131,6 @@ public class StateWar extends State
             Text.write(g, "TURN ACTION", (int) this.tempButton1.getCenterX(), this.tempButton1.y + 35, "CENTER", Fonts.getFont("STANDARD"), Color.LIGHT_GRAY);
         }
     }
-    
-    /*private void serverAction()
-    {
-        this.serverBusy = true;
-        this.serverStatus = "UPLOADING YOUR ACTIONS";
-        this.serverActionRequest();
-    }
-    
-    private void serverActionRequest()
-    {
-        ArrayList<String> response = NetworkService.request("http://tk-game-network-db.co.nf/action.php?accountID=" + this.warAccountID + "&battleID=" + this.warGameID);
-        if(response.get(0).contains("ERROR"))
-        {
-            Console.print("REQUEST ERROR");
-            Console.print(response.get(0));
-        }
-        else
-        {
-            this.serverBusy = false;
-            this.serverStatus = "SERVER HAS BEEN UPDATED";
-            this.serverTime = 60;
-        }
-    }*/
-    
-    /*private void serverUpdate()
-    {
-        this.serverBusy = true;
-        this.serverStatus = "CHECKING FOR OPPONENT ACTIONS";
-        this.serverUpdateRequest();
-    }
-    
-    private void serverUpdateRequest()
-    {
-        ArrayList<String> response = NetworkService.request("http://tk-game-network-db.co.nf/update.php?accountID=" + this.warAccountID + "&battleID=" + this.warGameID);
-        if(response.get(0).contains("ERROR"))
-        {
-            Console.print("REQUEST ERROR");
-            Console.print(response.get(0));
-        }
-        else
-        {
-            int turnCount = Integer.parseInt(response.get(0).split("\\|")[0]);
-            int turnActive = Integer.parseInt(response.get(0).split("\\|")[1]);
-            if(turnCount > this.turnCount)
-            {
-                this.turnCount = turnCount;
-                this.turnActive = turnActive;
-                this.serverStatus = "OPPONENT HAS ACTED - IT'S YOUR TURN";
-            }
-            else {this.serverStatus = "WAITING FOR OPPONENT";}
-            this.serverBusy = false;
-            this.serverTime = 60;
-        }
-    }*/
 
     public void tick()
     {
@@ -171,27 +147,6 @@ public class StateWar extends State
             }
             else {this.refreshTick = 30;}
         }
-        // Loading (TEMP - should fetch the battle data to build an object before getting here)
-        //if(!this.warLoad && !this.serverBusy) {this.serverLoad();}
-        
-        // NETWORK SETUP
-        // we need to have two alternating states: active and idle
-        // while the player is active, we don't request anything (for now) until we click something
-        // as the other player is active, we periodically check for any updates (to become active again)
-        
-        //if(!this.serverBusy) {this.tickServer();}
     }
-    
-    /*private void tickServer()
-    {
-        if(this.serverTime > 0)
-        {
-            this.serverTime -= 1;
-            if(this.serverTime <= 0)
-            {
-                this.serverUpdate();
-            }
-        }
-    }*/
     
 }
