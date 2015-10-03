@@ -1,26 +1,26 @@
 package states;
 
 import app.Engine;
-import debug.Console;
-import game.account.AccountData;
-import game.account.AccountGateway;
+import components.ComponentAbstract;
+import components.ComponentGroup;
+import components.button.Button;
 import gfx.Drawing;
-import gfx.Fonts;
-import gfx.Text;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import tools.Render;
 
 public class StateTitle extends State
 {
     // TEMP
-    private final Rectangle tempButton1 = new Rectangle(50, 50, 200, 75);
-    private final Rectangle tempButton2 = new Rectangle(50, 150, 200, 75);
+    private ComponentGroup components;
     
     public StateTitle()
     {
-        //
+        // TEMP
+        this.components = new ComponentGroup();
+        this.components.addComponent(new Button(this.components, "BUTTON1", "ACCOUNT 1", 50, 100));
+        this.components.addComponent(new Button(this.components, "BUTTON2", "ACCOUNT 2", 50, 200));
     }
 
     public void inputKeyPress(String key)
@@ -41,8 +41,12 @@ public class StateTitle extends State
     public void inputMouseClickL(MouseEvent e)
     {
         // TEMP
-        if(this.tempButton1.contains(e.getPoint())) {Engine.setState(new StateLobby(1));}
-        if(this.tempButton2.contains(e.getPoint())) {Engine.setState(new StateLobby(2));}
+        ComponentAbstract click = this.components.inputClick(e);
+        if(click != null)
+        {
+            if(click.isRef("BUTTON1")) {Engine.setState(new StateLobby(1));}
+            if(click.isRef("BUTTON2")) {Engine.setState(new StateLobby(2));}
+        }
     }
 
     public void inputMouseClickR(MouseEvent e)
@@ -60,19 +64,16 @@ public class StateTitle extends State
         this.renderTitle(g);
         
         // TEMP
-        Drawing.fillRect(g, this.tempButton1, Color.DARK_GRAY);
-        Drawing.drawRect(g, this.tempButton1, Color.LIGHT_GRAY);
-        Text.write(g, "Account 1", (int) this.tempButton1.getCenterX(), this.tempButton1.y + 35, "CENTER", Fonts.getFont("STANDARD"), Color.LIGHT_GRAY);
-        //
-        Drawing.fillRect(g, this.tempButton2, Color.DARK_GRAY);
-        Drawing.drawRect(g, this.tempButton2, Color.LIGHT_GRAY);
-        Text.write(g, "Account 2", (int) this.tempButton2.getCenterX(), this.tempButton2.y + 40, "CENTER", Fonts.getFont("STANDARD"), Color.LIGHT_GRAY);
+        this.components.render(g);
     }
     
     private void renderTitle(Graphics g)
     {
         // Background
         Drawing.fillScreen(g, Color.BLACK);
+        
+        // Title
+        Render.writeTitle(g, "MAIN MENU");
     }
 
     public void tick()

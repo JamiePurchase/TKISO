@@ -1,8 +1,10 @@
 package states;
 
 import app.Engine;
+import debug.Console;
 import game.account.AccountData;
 import game.war.WarData;
+import game.world.Terrain;
 import gfx.Drawing;
 import gfx.Fonts;
 import gfx.Text;
@@ -10,6 +12,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import time.Timestamp;
 
 public class StateWar extends State
 {
@@ -20,13 +23,17 @@ public class StateWar extends State
     private WarData warData;
     private Rectangle warArea;
     
+    // Network
+    private boolean networkRequest;
+    private Timestamp networkTime;
+    private int networkTick;
+    
     // Info
     private Rectangle infoArea;
     private String infoText;
     
     // TEMP
     private final Rectangle tempButton1 = new Rectangle(350, 50, 200, 75);
-    private int refreshTick;
     
     public StateWar(AccountData player, WarData war)
     {
@@ -35,15 +42,23 @@ public class StateWar extends State
         
         // War
         this.warData = war;
-        this.warArea = new Rectangle(0, 0, Engine.extendWindow.getRenderFill().width, Engine.extendWindow.getRenderFill().height - 30);
+        this.warArea = new Rectangle(0, 0, Engine.extendWindow.getRenderFill().width, Engine.extendWindow.getRenderFill().height - 40);
+        
+        // Network
+        this.networkRequest = false;
+        //this.networkTime = new Timestamp();
+        this.networkTime = new Timestamp(new Timestamp().asLong() + 3000);
+        this.networkTick = 0;
+        // NOTE: consider using comparative timestamps to manage request times
         
         // Info Bar
-        this.infoArea = new Rectangle(0, Engine.extendWindow.getRenderFill().height - 30, Engine.extendWindow.getRenderFill().width, 30);
-        this.infoText = "This is the info bar";
+        this.infoArea = new Rectangle(0, Engine.extendWindow.getRenderFill().height - 40, Engine.extendWindow.getRenderFill().width, 40);
+        if(this.isPlayerActive()) {this.setInfoText("It's your turn...");}
+        else {this.setInfoText("Waiting for your opponent...");}
         
         // Refresh (move this into the war tick method later)
-        this.refreshTick = 0;
-        if(!this.isPlayerActive()) {this.refreshTick = 30;}
+        //this.refreshTick = 0;
+        //if(!this.isPlayerActive()) {this.refreshTick = 30;}
     }
 
     public void inputKeyPress(String key)
@@ -63,26 +78,44 @@ public class StateWar extends State
 
     public void inputMouseClickL(MouseEvent e)
     {
-        //if(this.warArea.contains(e.getPoint())) {this.warArea.inputClickL(e);}
+        // NOTE: has the player clicked on an interface?
         
-        // TEMP
-        if(this.tempButton1.contains(e.getPoint()) && this.isPlayerActive()) {this.warData.setTurnNext();}
+        // War
+        if(this.isPlayerActive() && this.warArea.contains(e.getPoint())) {this.warData.inputClickL(e);}
     }
 
     public void inputMouseClickR(MouseEvent e)
     {
-        //if(this.warArea.contains(e.getPoint())) {this.warArea.inputClickR(e);}
+        // War
+        if(this.isPlayerActive() && this.warArea.contains(e.getPoint())) {this.warData.inputClickR(e);}
     }
 
     public void inputMouseMove(MouseEvent e)
     {
         //
     }
+        
+    // NOTE: consider using a Mouse Wheel event to zoom in/out of the world
     
     private boolean isPlayerActive()
     {
         if(this.warData.getTurnActive() == this.playerData.getID()) {return true;}
         return false;
+    }
+    
+    private void networkRefresh()
+    {
+        // DEBUG
+        Console.print("Network Refresh");
+        
+        // Request Started
+        this.networkRequest = true;
+        
+        // NOTE: request latest action (and messages?)
+        this.warData.networkRefresh();
+        
+        // Request Done
+        this.networkRequest = false;
     }
     
     public void render(Graphics g)
@@ -99,8 +132,32 @@ public class StateWar extends State
         // Background
         Drawing.fillRect(g, this.infoArea, Color.WHITE);
         
-        // Text
-        Text.write(g, this.infoText, this.infoArea.x + 15, this.infoArea.y + 15, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        // Detail
+        Text.write(g, this.infoText, this.infoArea.x + 15, this.infoArea.y + 28, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        
+        // Position
+        String infoGridX = "-";
+        String infoGridY = "-";
+        if(this.warArea.contains(Engine.getMousePoint()))
+        {
+            Terrain posTerrain = this.warData.getInputTerrain(Engine.getMousePoint(true));
+            if(posTerrain != null)
+            {
+                infoGridX = "" + posTerrain.getPos().getGridX();
+                infoGridY = "" + posTerrain.getPos().getGridY();
+            }
+        }
+        Text.write(g, "x " + infoGridX, this.infoArea.x + this.infoArea.width - 360, this.infoArea.y + 28, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        Text.write(g, "y " + infoGridY, this.infoArea.x + this.infoArea.width - 280, this.infoArea.y + 28, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        
+        // Network
+        String infoNetwork = "-------";
+        if(this.networkRequest) {infoNetwork = "SYNCING";}
+        else
+        {
+            if(!this.isPlayerActive()) {infoNetwork = this.networkTime.asLong() + "wait";}
+        }
+        Text.write(g, infoNetwork, this.infoArea.x + this.infoArea.width - 15, this.infoArea.y + 28, "RIGHT", Fonts.getFont("STANDARD"), Color.BLACK);
     }
     
     private void renderTemp(Graphics g)
@@ -131,22 +188,58 @@ public class StateWar extends State
             Text.write(g, "TURN ACTION", (int) this.tempButton1.getCenterX(), this.tempButton1.y + 35, "CENTER", Fonts.getFont("STANDARD"), Color.LIGHT_GRAY);
         }
     }
+    
+    private void setInfoText(String text)
+    {
+        this.infoText = text;
+    }
 
     public void tick()
     {
-        if(!this.isPlayerActive())
+        // Game Running
+        this.tickRunning();
+        
+        // Player Active
+        if(this.isPlayerActive()) {this.tickActive();}
+        
+        // Player Inactive
+        if(!this.isPlayerActive()) {this.tickInactive();}
+    }
+    
+    private void tickActive()
+    {
+        if(this.warData.getArmyIdle().size() < 1)
         {
-            if(this.refreshTick > 0)
-            {
-                this.refreshTick -= 1;
-                if(this.refreshTick <= 0)
-                {
-                    this.warData.getDataRefresh();
-                    this.refreshTick = 30;
-                }
-            }
-            else {this.refreshTick = 30;}
+            this.setInfoText("Your turn has ended...");
         }
+    }
+    
+    private void tickInactive()
+    {
+        // New Actions
+        if(this.warData.getActionReady() && !this.warData.getActionActive())
+        {
+            this.warData.actionActivate();
+        }
+        
+        // Network Request
+        if(!this.networkRequest)
+        {
+            if(this.networkTime.compare(new Timestamp()) >= 3000)
+            {
+                this.networkTime = new Timestamp();
+                this.networkRefresh();
+            }
+        }
+    }
+    
+    private void tickRunning()
+    {
+        // World Tick
+        this.warData.tick();
+        
+        // Message Request
+        // NOTE: it might be wise to place message checks with the other calls when the player is waiting
     }
     
 }

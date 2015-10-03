@@ -1,8 +1,10 @@
 package game.account;
 
 import debug.Console;
+import game.account.banner.Banner;
 import java.util.ArrayList;
 import network.NetworkService;
+import time.Timestamp;
 
 public class AccountGateway
 {
@@ -15,7 +17,14 @@ public class AccountGateway
             Console.print("REQUEST ERROR");
             Console.print(response.get(0));
         }
-        else {return new AccountData(id, response.get(0).split("\\|")[1]);}
+        else
+        {
+            String username = response.get(0).split("\\|")[1];
+            Banner banner = new Banner(response.get(0).split("\\|")[2], response.get(0).split("\\|")[3]);
+            int exp = Integer.parseInt(response.get(0).split("\\|")[4]);
+            Timestamp online = new Timestamp(Integer.parseInt(response.get(0).split("\\|")[5]));
+            return new AccountData(id, username, banner, exp, online);
+        }
         return null;
     }
     
