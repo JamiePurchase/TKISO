@@ -2,15 +2,18 @@ package game.war;
 
 import app.Engine;
 import debug.Console;
+import game.account.AccountData;
 import game.action.ActionData;
+import game.action.ActionDataEnd;
 import game.action.ActionDataMove;
 import game.action.ActionPosition;
-import game.action.ActionType;
 import game.army.ArmyData;
 import game.display.SelectAbstract;
 import game.display.SelectArmy;
 import game.world.Position;
 import game.world.Terrain;
+import game.world.WorldData;
+import game.world.WorldLoader;
 import gfx.Drawing;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -20,8 +23,8 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
-import maths.Maths;
 import network.NetworkService;
+import states.StateWar;
 import time.Timestamp;
 import tools.HashMapTools;
 
@@ -29,9 +32,10 @@ public class WarData
 {
     // War
     private int warGameID, warHostID, warGuestID;
-    //private WorldData warWorld;
     
     // World
+    private WorldData worldData;
+    // TEMPORARY
     private BufferedImage worldTexture;
     private HashMap<String, Terrain> worldTerrain;
     private Rectangle worldArea;
@@ -73,14 +77,15 @@ public class WarData
         this.warGameID = id;
         this.warHostID = host;
         this.warGuestID = guest;
-        //this.warWorld = WorldGateway.getWorld(world);
         
         // World
-        this.worldTexture = Drawing.getImage("graphics/terrain/temp.png");
+        this.worldData = WorldLoader.loadWorld(1, this);
         this.worldArea = new Rectangle(0, 0, Engine.extendWindow.getRenderFill().width, Engine.extendWindow.getRenderFill().height - 40);
         this.worldScrollX = 0;
         this.worldScrollY = 0;
-        this.initTerrain();
+        // TEMP (need to call this.worldData.texture/terrain instead - MERGE THESE)
+        this.worldTexture = this.worldData.getTexture();
+        this.worldTerrain = this.worldData.getTerrain();
         
         // Config
         //this.configMatchType = ?
@@ -108,6 +113,7 @@ public class WarData
         
         // TEMP
         this.armyPlayer.add(new ArmyData(1, this, 1, new Position(6, 4), 100, 100, 100, 100));
+        this.armyEnemy.add(new ArmyData(2, this, 2, new Position(11, 5), 100, 100, 100, 100));
         
         // DEBUG
         Console.print("Added an army to the player forces (ID = " + this.armyPlayer.get(0).getArmyID() + ")");
@@ -125,6 +131,10 @@ public class WarData
     
     public void actionActivate()
     {
+        // DEBUG
+        Console.print("WarData -> actionActivate");
+        Console.print(" there are currently " + this.actionStack.size() + " actions queued.");
+        
         // Action Started
         this.actionActive = true;
         ActionData action = this.actionStack.get(0);
@@ -134,6 +144,10 @@ public class WarData
         this.actionComplete = action.getID();
         this.actionStack.remove(action);
         this.actionActive = false;
+        
+        // DEBUG
+        Console.print("WarData -> actionActivate completed");
+        Console.print(" there are now " + this.actionStack.size() + " actions queued.");
         
         // NOTE: allow the app to tick a few times before activating the next action
         // NOTE: set info text back to 'waiting for opponent' if no more actions?
@@ -153,6 +167,12 @@ public class WarData
     public ArrayList<ActionData> getActionStack()
     {
         return this.actionStack;
+    }
+    
+    public Rectangle getAreaWar()
+    {
+        StateWar state = (StateWar) Engine.getState();
+        return state.getAreaWar();
     }
     
     public ArmyData getArmyID(int id)
@@ -205,6 +225,13 @@ public class WarData
     
     public ArmyData getInputArmy(Point point)
     {
+        ArmyData army = this.getInputArmyPlayer(point);
+        if(army != null) {return army;}
+        return this.getInputArmyEnemy(point);
+    }
+    
+    public ArmyData getInputArmyPlayer(Point point)
+    {
         // Army Player
         if(this.armyPlayer.size() > 0)
         {
@@ -214,6 +241,12 @@ public class WarData
             }
         }
         
+        // Nothing
+        return null;
+    }
+    
+    public ArmyData getInputArmyEnemy(Point point)
+    {
         // Army Enemy
         if(this.armyEnemy.size() > 0)
         {
@@ -241,6 +274,12 @@ public class WarData
             }
         }
         return null;
+    }
+    
+    public AccountData getPlayerData()
+    {
+        StateWar state = (StateWar) Engine.getState();
+        return state.getPlayerData();
     }
     
     public ActionPosition getPositionAction(Point point)
@@ -317,48 +356,19 @@ public class WarData
         return new Rectangle(0, 0, Engine.extendWindow.getRenderFill().width, Engine.extendWindow.getRenderFill().height - 40);
     }
     
-    private void initTerrain()
-    {
-        // TEMP
-        int sizeX = 32;
-        int sizeY = 12;
-        
-        // NOTE: the hashmap should be created by the world loader (when the large background image is made)
-        this.worldTerrain = new HashMap();
-        for(int x = 0; x < sizeX; x++)
-        {
-            for(int y = 0; y < sizeY; y++)
-            {
-                if(Maths.isEven(x) && Maths.isEven(y))
-                {
-                    Position pos = new Position(x, y);
-                    this.worldTerrain.put(pos.getGridString(), new Terrain(this, pos, false));
-                }
-                if(!Maths.isEven(x) && !Maths.isEven(y))
-                {
-                    Position pos = new Position(x, y);
-                    this.worldTerrain.put(pos.getGridString(), new Terrain(this, pos, false));
-                }
-            }
-        }
-    }
-    
     public void inputClickL(MouseEvent e)
     {
         // Armies
-        ArmyData clickArmy = this.getInputArmy(e.getPoint());
+        ArmyData clickArmy = this.getInputArmyPlayer(e.getPoint());
+        // NOTE: the above should only return armies that belong to the player BUT this area needs more work
         if(clickArmy != null)
         {
             this.setSelection(clickArmy);
             return;
         }
-
-        // Terrain
-        /*Terrain clickTerrain = this.getInputTerrain(e.getPoint());
-        if(clickTerrain != null)
-        {
-            //
-        }*/
+        
+        // Constructs
+        //
         
         // Nothing
         this.setSelection();
@@ -405,26 +415,35 @@ public class WarData
     public void networkRefresh()
     {
         // Request new actions (and messages?) from the server
-        ArrayList<String> response2 = NetworkService.request("http://tk-game-network-db.co.nf/iso/waiting.php?war=" + this.warGameID + "&complete=" + this.actionComplete);
+        ArrayList<String> response2 = NetworkService.request("http://tk-game-network-db.co.nf/iso/waiting.php?account=" + this.getPlayerData().getID() + "&war=" + this.warGameID + "&complete=" + this.actionComplete);
         String[] response = response2.get(0).split("\\<br>");
         Console.print(response);
+        
+        // Create new actions and add them to the stack
         int actionNew = Integer.parseInt(response[0]);
         if(actionNew > 0)
         {
             for(int x = 0; x < actionNew; x++)
             {
                 String[] actionData = response[x + 1].split("\\|");
-                if(actionData[2].equals("MOVE"))
+                
+                // NOTE: this if statement ensures a player only views actions by the opponent
+                // it would be better if the server only queried the necessary actions
+                if(Integer.parseInt(actionData[1]) != this.getTurnActive())
                 {
-                    this.actionStack.add(new ActionDataMove(Integer.parseInt(actionData[0]), this, Integer.parseInt(actionData[1]), Integer.parseInt(actionData[3].split("\\_")[0]), new Position(actionData[3].split("\\_")[1])));
+                    // NOTE: it might be worth abstracting out this section (so we can pass a string array to another
+                    // method for each iteration of the for loop)
+                    if(actionData[2].equals("END"))
+                    {
+                        this.actionStack.add(new ActionDataEnd(Integer.parseInt(actionData[0]), this, Integer.parseInt(actionData[1]), Integer.parseInt(actionData[3])));
+                    }
+                    if(actionData[2].equals("MOVE"))
+                    {
+                        this.actionStack.add(new ActionDataMove(Integer.parseInt(actionData[0]), this, Integer.parseInt(actionData[1]), Integer.parseInt(actionData[3].split("\\_")[0]), new Position(actionData[3].split("\\_")[1])));
+                    }
                 }
             }
         }
-        
-        
-        //Integer.parseInt(response.get(0).split("\\|")[4])
-        
-        // NOTE: new actions must be added to this.actionStack (lowest ID first, will be activated soonest)
     }
     
     public void render(Graphics g)
@@ -538,16 +557,16 @@ public class WarData
         this.turnActive = this.getTurnNext();
     }
     
-    /*public void setTurnNext()
+    public void setTurnPlayer(int account)
     {
-        NetworkService.request("http://tk-game-network-db.co.nf/warGateway.php?request=TURN&id=" + this.warGameID);
-        this.getDataRefresh();
-    }*/
+        this.turnActive = account;
+    }
     
     public void tick()
     {
         this.tickArmies();
         // NOTE: iterate through animation frames for armies, constructs, scenery, effects, hud, etc...
+        //this.tickConstructs();
     }
     
     private void tickArmies()
@@ -570,5 +589,26 @@ public class WarData
             }
         }
     }
+    
+    /*private void tickConstructs()
+    {
+        // Constructs Player
+        if(this.constructPlayer.size() > 0)
+        {
+            for(int x = 0; x < this.constructPlayer.size(); x++)
+            {
+                this.constructPlayer.get(x).tick();
+            }
+        }
+        
+        // Constructs Enemy
+        if(this.constructEnemy.size() > 0)
+        {
+            for(int x = 0; x < this.constructEnemy.size(); x++)
+            {
+                this.constructPlconstructEnemyayer.get(x).tick();
+            }
+        }
+    }*/
     
 }

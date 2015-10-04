@@ -28,5 +28,10 @@ public abstract class ActionData
     {
         return this.actionType;
     }
+    
+    public WarData getWar()
+    {
+        return this.actionWar;
+    }
 
 }

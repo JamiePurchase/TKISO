@@ -10,7 +10,7 @@ public class WarGateway
     
     public static WarData getWarData(int id)
     {
-        ArrayList<String> response = NetworkService.request("http://tk-game-network-db.co.nf/warGateway.php?request=GET&id=" + id);
+        /*ArrayList<String> response = NetworkService.request("http://tk-game-network-db.co.nf/warGateway.php?request=GET&id=" + id);
         if(response.get(0).contains("ERROR"))
         {
             Console.print("REQUEST ERROR");
@@ -36,7 +36,10 @@ public class WarGateway
             // Create the WarData object
             return new WarData(id, host, guest, world, turnActive, turnCount, turnBegin);
         }
-        return null;
+        return null;*/
+        
+        // TEMP
+        return new WarData(1, 1, 2, 1, 1, 1, new Timestamp());
     }
     
 }

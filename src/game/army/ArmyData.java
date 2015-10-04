@@ -20,6 +20,8 @@ public class ArmyData
     private WarData armyWar;
     private Position armyPosition;
     
+    // NOTE: armies need to gain some energy at the start of their turn
+    
     // Stats
     private int statHealthNow, statHealthMax;
     private int statEnergyNow, statEnergyMax;
@@ -39,8 +41,6 @@ public class ArmyData
         this.armyWar = war;
         this.armyRulerID = ruler;
         this.armyPosition = position;
-        
-        // NOTE: consider a custom class for position (easy string storage, useful functions)
         
         // Stats
         this.statHealthNow = healthNow;
@@ -126,7 +126,9 @@ public class ArmyData
     
     private BufferedImage getRenderImage()
     {
-        return this.animSheet.getSubimage(this.animFrameNow * 100, 0, 100, 100);
+        BufferedImage image = this.animSheet.getSubimage(this.animFrameNow * 100, 0, 100, 100);
+        if(!this.isPlayer()) {return Drawing.flipImage(image);}
+        return image;
     }
     
     public ArrayList<Effect> getStatEffect()
@@ -159,6 +161,12 @@ public class ArmyData
         return this.actionIdle;
     }
     
+    public boolean isPlayer()
+    {
+        if(this.armyRulerID == this.armyWar.getPlayerData().getID()) {return true;}
+        return false;
+    }
+    
     public void render(Graphics g)
     {
         // Selection
@@ -180,7 +188,7 @@ public class ArmyData
         // NOTE: status effect animations? defend icon?
     }
     
-    private void setPosition(Position pos)
+    public void setPosition(Position pos)
     {
         this.armyPosition = pos;
     }

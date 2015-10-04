@@ -3,6 +3,7 @@ package states;
 import app.Engine;
 import debug.Console;
 import game.account.AccountData;
+import game.account.banner.Banner;
 import game.war.WarData;
 import game.world.Terrain;
 import gfx.Drawing;
@@ -26,7 +27,6 @@ public class StateWar extends State
     // Network
     private boolean networkRequest;
     private Timestamp networkTime;
-    private int networkTick;
     
     // Info
     private Rectangle infoArea;
@@ -46,10 +46,7 @@ public class StateWar extends State
         
         // Network
         this.networkRequest = false;
-        //this.networkTime = new Timestamp();
         this.networkTime = new Timestamp(new Timestamp().asLong() + 3000);
-        this.networkTick = 0;
-        // NOTE: consider using comparative timestamps to manage request times
         
         // Info Bar
         this.infoArea = new Rectangle(0, Engine.extendWindow.getRenderFill().height - 40, Engine.extendWindow.getRenderFill().width, 40);
@@ -59,6 +56,16 @@ public class StateWar extends State
         // Refresh (move this into the war tick method later)
         //this.refreshTick = 0;
         //if(!this.isPlayerActive()) {this.refreshTick = 30;}
+    }
+    
+    public Rectangle getAreaWar()
+    {
+        return this.warArea;
+    }
+    
+    public AccountData getPlayerData()
+    {
+        return this.playerData;
     }
 
     public void inputKeyPress(String key)
@@ -125,6 +132,7 @@ public class StateWar extends State
         
         this.warData.render(g);
         this.renderInfo(g);
+        this.renderPlayer(g);
     }
     
     private void renderInfo(Graphics g)
@@ -155,9 +163,28 @@ public class StateWar extends State
         if(this.networkRequest) {infoNetwork = "SYNCING";}
         else
         {
-            if(!this.isPlayerActive()) {infoNetwork = this.networkTime.asLong() + "wait";}
+            if(!this.isPlayerActive()) {infoNetwork = "" + this.networkTime.compare(new Timestamp());}
         }
         Text.write(g, infoNetwork, this.infoArea.x + this.infoArea.width - 15, this.infoArea.y + 28, "RIGHT", Fonts.getFont("STANDARD"), Color.BLACK);
+    }
+    
+    private void renderPlayer(Graphics g)
+    {
+        // Rect
+        Rectangle rect = new Rectangle(this.warArea.x + 25, this.warArea.y + 15, 400, 100);
+        
+        // Background
+        Drawing.fadeRect(g, rect, Color.WHITE, 0.8f);
+        
+        // Border
+        Drawing.drawRect(g, rect, Color.BLACK);
+        
+        // Text
+        Text.write(g, this.getPlayerData().getUsername(), (int) rect.x + 230, rect.y + 30, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        Text.write(g, "  [stats]", (int) rect.x + 230, rect.y + 60, "LEFT", Fonts.getFont("STANDARD"), Color.BLACK);
+        
+        // Banner (TEMP)
+        new Banner("050-000-050", "1").render(g, rect.x + 10, rect.y + 10);
     }
     
     private void renderTemp(Graphics g)
@@ -189,7 +216,7 @@ public class StateWar extends State
         }
     }
     
-    private void setInfoText(String text)
+    public void setInfoText(String text)
     {
         this.infoText = text;
     }
@@ -220,6 +247,7 @@ public class StateWar extends State
         if(this.warData.getActionReady() && !this.warData.getActionActive())
         {
             this.warData.actionActivate();
+            return;
         }
         
         // Network Request
@@ -229,6 +257,8 @@ public class StateWar extends State
             {
                 this.networkTime = new Timestamp();
                 this.networkRefresh();
+                //return;
+                // NOTE: need to uncomment this if anything else happens after
             }
         }
     }

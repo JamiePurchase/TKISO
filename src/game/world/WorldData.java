@@ -1,20 +1,32 @@
 package game.world;
 
 import game.war.WarData;
+import java.awt.image.BufferedImage;
+import java.util.HashMap;
 
 public class WorldData
 {
-    // World
-    private int worldID;
-    private WarData worldWar;
+    private final int worldID;
+    private final WarData worldWar;
+    private final BufferedImage worldTexture;
+    private HashMap<String, Terrain> worldTerrain;
     
-    // Terrain
-    //
-    
-    public WorldData(int worldID)
+    public WorldData(int id, WarData war, BufferedImage texture, HashMap<String, Terrain> terrain)
     {
-        // NOTE: might not need to worry about ID or warData... we need to load the terrain art and collision data
-        // then compile it into a lightweight bufferedImage and array of data (don't keep rendering individual tiles)
+        this.worldID = id;
+        this.worldWar = war;
+        this.worldTexture = texture;
+        this.worldTerrain = terrain;
+    }
+    
+    public HashMap<String, Terrain> getTerrain()
+    {
+        return this.worldTerrain;
+    }
+    
+    public BufferedImage getTexture()
+    {
+        return this.worldTexture;
     }
     
 }

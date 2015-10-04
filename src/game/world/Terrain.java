@@ -30,5 +30,10 @@ public class Terrain
     {
         return this.terrainSolid;
     }
+    
+    public void setSolid(boolean solid)
+    {
+        this.terrainSolid = solid;
+    }
 
 }

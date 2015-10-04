@@ -1,9 +1,11 @@
 package game.action;
 
+import app.Engine;
 import debug.Console;
 import game.army.ArmyData;
 import game.war.WarData;
 import game.world.Position;
+import states.StateWar;
 
 public class ActionDataMove extends ActionData
 {
@@ -15,15 +17,16 @@ public class ActionDataMove extends ActionData
         super(id, war, account, ActionType.MOVE);
         this.actionArmy = war.getArmyID(army);
         this.actionDestination = destination;
-        
-        // DEBUG
-        Console.print("ActionDataMove created (" + id + ", war, " + account + ", " + army + ", " + destination.getGridString() + ")");
     }
     
     public void activate()
     {
         // Move the army to the destination
+        this.actionArmy.setPosition(this.actionDestination);
+        
         // Set the info text to support this
+        StateWar state = (StateWar) Engine.getState();
+        state.setInfoText(this.actionArmy.getInfoName() + " moved...");
     }
     
 }
