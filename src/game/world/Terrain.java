@@ -1,23 +1,37 @@
 package game.world;
 
 import game.war.WarData;
+import java.awt.image.BufferedImage;
 
 public class Terrain
 {
     private WarData terrainWar;
     private Position terrainPos;
+    private BufferedImage terrainTexture;
     private boolean terrainSolid;
     
-    public Terrain(WarData war, Position pos, boolean solid)
+    public Terrain(WarData war, Position pos, BufferedImage image, boolean solid)
     {
         this.terrainWar = war;
         this.terrainPos = pos;
+        this.terrainTexture = image;
+        this.terrainSolid = solid;
+    }
+    
+    public void edit(BufferedImage image, boolean solid)
+    {
+        this.terrainTexture = image;
         this.terrainSolid = solid;
     }
     
     public Position getPos()
     {
         return this.terrainPos;
+    }
+    
+    public BufferedImage getTexture()
+    {
+        return this.terrainTexture;
     }
     
     public boolean isEmpty()
@@ -34,6 +48,11 @@ public class Terrain
     public void setSolid(boolean solid)
     {
         this.terrainSolid = solid;
+    }
+    
+    public void setTexture(BufferedImage image)
+    {
+        this.terrainTexture = image;
     }
 
 }
